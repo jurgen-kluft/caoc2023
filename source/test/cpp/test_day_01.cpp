@@ -46,36 +46,35 @@ UNITTEST_SUITE_BEGIN(day01)
         class digits_parser_t
         {
         public:
-            digits_parser_t()
-            {
-            }
+            digits_parser_t() {}
 
-            bool parse(crunes_t& line, u8& d1, u8& d2)
+            bool parse(crunes_t& line, u32& number)
             {
-                d1 = 0;
-                d2 = 0;
-                
-                u32 cursor = 0;
-                s32 digits = 0;
-                while (!line.at_end(cursor) || digits < 2)
+                number = 0;
+
+                u32 cursor      = 0;
+                s8  first_digit = -1;
+                s8  last_digit  = -1;
+                while (!line.at_end(cursor))
                 {
                     uchar32 c = line.read(cursor);
 
                     // if c is a number set the digit, ignore any other character
                     if (c >= '0' && c <= '9')
                     {
-                        if (digits == 0)
+                        c = c - '0';
+                        if (first_digit == -1)
                         {
-                            d1 = c - '0';
-                            digits++;
+                            first_digit = (s8)c;
+                            last_digit = (s8)c;
                         }
-                        else if (digits == 1)
+                        else
                         {
-                            d2 = c - '0';
-                            digits++;
+                            last_digit = (s8)c;
                         }
                     }
                 }
+                number = (u32)first_digit*10 + (u32)last_digit;
 
                 return true;
             }
@@ -86,18 +85,18 @@ UNITTEST_SUITE_BEGIN(day01)
             mem_stream    memtext(day1_txt, day1_txt_len);
             text_stream_t text(&memtext, text_stream_t::encoding_ascii);
 
-            array_t<line_t>* lines = array_t<line_t>::create(0, 1024);
-
-            crunes_t      line;
+            crunes_t        line;
             digits_parser_t lp;
-            u8            d1, d2;
+            u32             number = 0;
+            u32             sum    = 0;
 
             while (text.readLine(line))
             {
-                CHECK_TRUE(lp.parse(line, d1, d2));
+                CHECK_TRUE(lp.parse(line, number));
+                sum += number;
             }
 
-            lines->destroy(lines);
+            printf(crunes_t("sum = %u\n"), va_t(sum));
 
             text.close();
             memtext.close();
@@ -108,18 +107,17 @@ UNITTEST_SUITE_BEGIN(day01)
             mem_stream    memtext(day1_txt, day1_txt_len);
             text_stream_t text(&memtext, text_stream_t::encoding_ascii);
 
-            array_t<line_t>* lines = array_t<line_t>::create(0, 1024);
-
-            crunes_t      line;
+            crunes_t        line;
             digits_parser_t lp;
-            u8            d1, d2;
+
+            u32 number = 0;
+            u32 sum    = 0;
 
             while (text.readLine(line))
             {
-                CHECK_TRUE(lp.parse(line, d1, d2));
+                CHECK_TRUE(lp.parse(line, number));
+                sum += number;
             }
-
-            lines->destroy(lines);
 
             text.close();
             memtext.close();
