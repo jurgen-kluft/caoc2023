@@ -2,23 +2,15 @@
 *
 !*/
 
-vendor/
-target/
-t2-output/
-source/main/builddir/
-source/test/builddir/
-tags
-
 #except the following files
 !.gitignore
 !.clang-format
+
 !*.cpp
 !*.hpp
 !*.c
 !*.h
 !*.inl
-
-!*.pl
 
 !*.go
 !*.md
@@ -30,11 +22,10 @@ tags
 !*.hlsl
 !*.fragment
 
-!*.mold
-!*.sc
-!*.diagram
-
 !*.ini
 !*.bat
+!*.sh
+!*.txt
 
 #except the following folders
+!data/
