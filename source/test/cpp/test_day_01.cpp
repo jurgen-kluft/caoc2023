@@ -18,8 +18,8 @@
 #include <time.h>
 #include <stdio.h>
 
-extern unsigned char day1_txt[];
-extern unsigned int  day1_txt_len;
+extern unsigned char day1[];
+extern unsigned int  day1_len;
 
 using namespace ncore;
 
@@ -185,7 +185,7 @@ UNITTEST_SUITE_BEGIN(day01)
 
         UNITTEST_TEST(part_1)
         {
-            mem_stream    memtext(day1_txt, day1_txt_len);
+            mem_stream    memtext(day1, day1_len);
             text_stream_t text(&memtext, text_stream_t::encoding_ascii);
 
             crunes_t        line;
@@ -207,7 +207,7 @@ UNITTEST_SUITE_BEGIN(day01)
 
         UNITTEST_TEST(part_2)
         {
-            mem_stream    memtext(day1_txt, day1_txt_len);
+            mem_stream    memtext(day1, day1_len);
             text_stream_t text(&memtext, text_stream_t::encoding_ascii);
 
             crunes_t        line;
