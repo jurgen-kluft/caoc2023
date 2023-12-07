@@ -30,202 +30,235 @@ UNITTEST_SUITE_BEGIN(day02)
         UNITTEST_FIXTURE_SETUP() {}
         UNITTEST_FIXTURE_TEARDOWN() {}
 
-        class digits_parser_t
+        struct set_t
         {
-        public:
-            digits_parser_t() {}
+            s8 m_colors[4];
+        };
 
-            bool parse(crunes_t& line, u32& number)
+        struct game_t
+        {
+            s32   m_id;
+            s32   m_set_cnt;
+            set_t m_set_array[8];
+
+            inline void reset() { m_id = -1; m_set_cnt = 0; }
+        };
+
+        struct input_t
+        {
+            const char* input;
+            u32         input_len;
+            const char* cursor;
+
+            input_t(const char* input, u32 input_len)
+                : input(input)
+                , input_len(input_len)
+                , cursor(input)
             {
-                number = 0;
+            }
 
-                u32 cursor      = 0;
-                s8  first_digit = -1;
-                s8  last_digit  = -1;
-                while (!line.at_end(cursor))
+            inline char peek() const
+            {
+                return *cursor;
+            }
+
+            inline bool consume(const char* str)
+            {
+                const char* iter = cursor;
+                while (*str != 0)
                 {
-                    uchar32 c = line.read(cursor);
+                    if (endOfFile())
+                        return false;
+                    if (endOfLine())
+                        return false;
 
-                    // if c is a number set the digit, ignore any other character
-                    if (c >= '0' && c <= '9')
-                    {
-                        c = c - '0';
-                        if (first_digit == -1)
-                        {
-                            first_digit = (s8)c;
-                            last_digit = (s8)c;
-                        }
-                        else
-                        {
-                            last_digit = (s8)c;
-                        }
-                    }
+                    if (*iter != *str)
+                        return false;
+
+                    ++iter;
+                    ++str;
                 }
-                number = (u32)first_digit*10 + (u32)last_digit;
-
+                cursor = iter;
                 return true;
             }
 
-            static s32 match_digit(const char* digit, s32 digitlen)
+            inline bool endOfFile() const { return (cursor >= input + input_len); }
+            inline bool endOfLine() const { return (*cursor == '\n'); }
+
+            inline bool next()
             {
-                static const char* digits[] = {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
-                s8 match[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-                s8 match_count = 9;
-
-                for (s8 i = 0; i < digitlen; ++i)
-                {
-                    s8 count = 0;
-                    for (s8 j = 0; j < match_count; ++j)
-                    {
-                        s8 index = match[j];
-                        if (digit[i] == digits[index][i])
-                        {
-                            match[count++] = match[j];
-                            if (digits[index][i + 1] == '\0')
-                                return index + 1;
-                        }
-                    }
-                    match_count = count;
-				}
-
-                // When a partial match is found (first N characters), the match_count will be greater than 0.
-				return match_count > 0 ? 0 : -1;
-			}
-
-            static void shift_digit(char* digit_str, s32& digit_len)
-            {
-                // move all digits one character to the left
-                // e.g. handle "twone" -> 2, 1
-                for (s32 i = 0; i < digit_len - 1; ++i)
-                    digit_str[i] = digit_str[i + 1];
-                digit_str[digit_len] = '\0';
-                digit_len--;
-            }
-
-            static s8 handle_digit(char* digit_str, s32& digit_len, s8& first_digit, s8& last_digit)
-            {
-                s32 match = match_digit(digit_str, digit_len);
-                if (match >= 1 && match <= 9)
-                {
-                    if (first_digit == -1)
-                    {
-                        first_digit = (s8)match;
-                        // consume the textual digit
-                        digit_len = 0;
-                    }
-                    else
-                    {
-                        shift_digit(digit_str, digit_len);
-                    }
-                    last_digit = (s8)match;
-                }
-                else if (match  == -1)
-                {
-                    // no leading partial match -> eat one character
-                    shift_digit(digit_str, digit_len);
-                }
-                return match;
-            }
-
-            bool parse2(crunes_t& line, u32& number)
-            {
-                number = 0;
-
-                // Can be any of the 9 digits
-                // one, two, three, four, five, six, seven, eight, nine
-                // the longest digit is 5 characters, so we can use a 8 character buffer
-                s32  digits   = 0;
-                char digit_str[32] = {0};
-
-                u32 cursor      = 0;
-                s8  first_digit = -1;
-                s8  last_digit  = -1;
-                while (!line.at_end(cursor))
-                {
-                    uchar32 c = line.read(cursor);
-
-                    // if c is a number set the digit, ignore any other character
-                    if (c >= '0' && c <= '9')
-                    {
-                        digits = 0; // reset the textual digit decoder
-
-                        c = c - '0';
-                        if (first_digit == -1)
-                            first_digit = (s8)c;
-                        last_digit = (s8)c;
-                    }
-                    else
-                    {
-                        if (c <= 'z' && c >= 'a')
-                        {
-                            digit_str[digits++] = (char)c;
-                            digit_str[digits]   = '\0';
-
-                            handle_digit(digit_str, digits, first_digit, last_digit);
-                        }
-                    }
-                }
-
-                while (digits > 0)
-                {
-                    if (handle_digit(digit_str, digits, first_digit, last_digit) == 0)
-                    {
-                        // this case is when the trailing text has a partial match for a digit, however we are not
-                        // adding more digits to the number, so we need to shift the digit string to the left to keep
-                        // finding a match
-                        shift_digit(digit_str, digits);
-                    }
-                }
-
-                number = (u32)first_digit * 10 + (u32)last_digit;
-
+                if (cursor >= input + input_len)
+                    return false;
+                ++cursor;
                 return true;
             }
         };
 
+        static bool ParseNumber(input_t & in, s32 & number)
+        {
+            number = 0;
+            while (!in.endOfLine())
+            {
+                const char c = in.peek();
+                if (c >= '0' && c <= '9')
+                {
+                    number = number * 10 + (c - '0');
+                    in.next();
+                    continue;
+                }
+                break;
+            }
+            return true;
+        }
+
+        static bool ParseColor(input_t & in, s8 & color)
+        {
+            color = -1;
+            if (in.consume("red"))
+            {
+                color = 0;
+            }
+            else if (in.consume("green"))
+            {
+                color = 1;
+            }
+            else if (in.consume("blue"))
+            {
+                color = 2;
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+        }
+
+        static void SkipWhitespace(input_t & in)
+        {
+            while (!in.endOfLine())
+            {
+                const char c = in.peek();
+                if (c == ' ' || c == '\t')
+                {
+                    in.next();
+                    continue;
+                }
+                break;
+            }
+        }
+
+        static bool ParseCube(input_t & in, s32 & number, s8 & color)
+        {
+            // Parse number
+            SkipWhitespace(in);
+            if (ParseNumber(in, number) == false)
+                return false;
+
+            // Parse color
+            SkipWhitespace(in);
+            if (ParseColor(in, color) == false)
+                return false;
+
+            return true;
+        }
+
+        static bool ParseGame(input_t & in, game_t & game)
+        {
+            // Example line:
+            // Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+
+            // Parse, Game 'number':
+
+            if (in.consume("Game") == false)
+                return false;
+            SkipWhitespace(in);
+
+            // Parse id
+            s32 game_id = 0;
+            if (ParseNumber(in, game_id) == false)
+                return false;
+            game.m_id = game_id;
+
+            if (in.consume(":") == false)
+                return false;
+
+            while (in.endOfLine() == false)
+            {
+                SkipWhitespace(in);
+
+                // Parse number
+                SkipWhitespace(in);
+                s32 number = 0;
+                if (ParseNumber(in, number) == false)
+                    return false;
+
+                // Parse color
+                SkipWhitespace(in);
+                s8 color = 0;
+                if (ParseColor(in, color) == false)
+                    return false;
+
+                // Add 'number : color' to the current set of this game
+                game.m_set_array[game.m_set_cnt].m_colors[color] = number;
+
+                SkipWhitespace(in);
+                if (in.endOfLine())
+                    break;
+
+                const char c = in.peek();
+                if (c == ';')
+                {
+                    // End of set
+                    ++game.m_set_cnt;
+                    in.next();
+                    continue;
+                }
+                else if (c == ',')
+                {
+                    // Continue to parse the next (number : color) pair
+                    in.next();
+                    continue;
+                }
+                else
+                {
+                    // Unexpected character
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        static bool IsGamePossible(game_t const& game, s32 red_bag_size, s32 green_bag_size, s32 blue_bag_size)
+        { return true;
+        }
+
         UNITTEST_TEST(part_1)
         {
-            mem_stream    memtext(day2, day2_len);
-            text_stream_t text(&memtext, text_stream_t::encoding_ascii);
+            s32     number = 0;
+            s32     sum    = 0;
+            input_t input((const char*)day2, day2_len);
 
-            crunes_t        line;
-            digits_parser_t lp;
-            u32             number = 0;
-            u32             sum    = 0;
+            const s32 red_bag_size = 12;
+            const s32 green_bag_size = 13;
+            const s32 blue_bag_size  = 14;
 
-            while (text.readLine(line))
+            game_t game;
+            game.reset();
+            while (ParseGame(input, game))
             {
-                CHECK_TRUE(lp.parse(line, number));
-                sum += number;
+                if (IsGamePossible(game, red_bag_size, green_bag_size, blue_bag_size))
+                {
+                    sum += game.m_id;
+                }
+
+                game.reset();
             }
 
-            printf(crunes_t("part 1, sum = %u\n"), va_t(sum));
-
-            text.close();
-            memtext.close();
+            printf(crunes_t("part 1, number of possible games = %u\n"), va_t(sum));
         }
 
         UNITTEST_TEST(part_2)
         {
-            mem_stream    memtext(day2, day2_len);
-            text_stream_t text(&memtext, text_stream_t::encoding_ascii);
-
-            crunes_t        line;
-            digits_parser_t lp;
-
-            u32 number = 0;
-            u32 sum    = 0;
-
-            while (text.readLine(line))
-            {
-                CHECK_TRUE(lp.parse2(line, number));
-                sum += number;
-            }
-
-            printf(crunes_t("part 2, sum = %u\n"), va_t(sum));
-
-            text.close();
-            memtext.close();
         }
     }
 }
