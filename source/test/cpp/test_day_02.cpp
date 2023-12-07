@@ -32,7 +32,14 @@ UNITTEST_SUITE_BEGIN(day02)
 
         struct set_t
         {
-            s8 m_colors[4];
+            s8          m_colors[4];
+            inline void reset()
+            {
+                m_colors[0] = 0;
+                m_colors[1] = 0;
+                m_colors[2] = 0;
+                m_colors[3] = 0;
+            }
         };
 
         struct game_t
@@ -41,7 +48,13 @@ UNITTEST_SUITE_BEGIN(day02)
             s32   m_set_cnt;
             set_t m_set_array[8];
 
-            inline void reset() { m_id = -1; m_set_cnt = 0; }
+            inline void reset()
+            {
+                m_id      = -1;
+                m_set_cnt = 0;
+                for (s32 i = 0; i < 8; ++i)
+                    m_set_array[i].reset();
+            }
         };
 
         struct input_t
@@ -57,10 +70,7 @@ UNITTEST_SUITE_BEGIN(day02)
             {
             }
 
-            inline char peek() const
-            {
-                return *cursor;
-            }
+            inline char peek() const { return *cursor; }
 
             inline bool consume(const char* str)
             {
@@ -203,7 +213,11 @@ UNITTEST_SUITE_BEGIN(day02)
 
                 SkipWhitespace(in);
                 if (in.endOfLine())
+                {
+                    ++game.m_set_cnt;
+                    in.next();
                     break;
+                }
 
                 const char c = in.peek();
                 if (c == ';')
@@ -228,8 +242,22 @@ UNITTEST_SUITE_BEGIN(day02)
             return true;
         }
 
-        static bool IsGamePossible(game_t const& game, s32 red_bag_size, s32 green_bag_size, s32 blue_bag_size)
-        { return true;
+        struct bags_t
+        {
+            s8 m_colors[4];
+        };
+
+        static bool IsGamePossible(game_t const& game, bags_t const& bags)
+        {
+            for (s32 i = 0; i < game.m_set_cnt; ++i)
+            {
+                for (s32 j = 0; j < 3; ++j)
+                {
+                    if (game.m_set_array[i].m_colors[j] > bags.m_colors[j])
+                        return false;
+                }
+            }
+            return true;
         }
 
         UNITTEST_TEST(part_1)
@@ -238,15 +266,16 @@ UNITTEST_SUITE_BEGIN(day02)
             s32     sum    = 0;
             input_t input((const char*)day2, day2_len);
 
-            const s32 red_bag_size = 12;
-            const s32 green_bag_size = 13;
-            const s32 blue_bag_size  = 14;
+            bags_t bags;
+            bags.m_colors[0] = 12; // red
+            bags.m_colors[1] = 13; // green
+            bags.m_colors[2] = 14; // blue
 
             game_t game;
             game.reset();
             while (ParseGame(input, game))
             {
-                if (IsGamePossible(game, red_bag_size, green_bag_size, blue_bag_size))
+                if (IsGamePossible(game, bags))
                 {
                     sum += game.m_id;
                 }
@@ -257,9 +286,7 @@ UNITTEST_SUITE_BEGIN(day02)
             printf(crunes_t("part 1, number of possible games = %u\n"), va_t(sum));
         }
 
-        UNITTEST_TEST(part_2)
-        {
-        }
+        UNITTEST_TEST(part_2) {}
     }
 }
 UNITTEST_SUITE_END
